@@ -34,9 +34,12 @@ type model struct {
 func main() {
 	var root string
 	var dryRun bool
+	var showVersion bool
 
 	flag.StringVarP(&root, "path", "p", ".", "Root directory to start from")
 	flag.BoolVarP(&dryRun, "dry-run", "d", false, "Preview deletions without removing anything")
+	flag.BoolVar(&showVersion, "version", false, "Print version info")
+
 	flag.Usage = func() {
 		fmt.Fprintln(os.Stderr, `
 Usage:
@@ -45,6 +48,7 @@ Usage:
 Options:
   -p, --path      Directory to scan for node_modules (default ".")
   -d, --dry-run   Show what would be deleted, don't actually delete
+      --version   Show version information
   -h, --help      Show this help message
 
 Interactive Controls:
@@ -55,6 +59,12 @@ Interactive Controls:
   esc             Exit search
   q               Quit
 `)
+	}
+	flag.Parse()
+
+	if showVersion {
+		fmt.Printf("nuke version: %s\ncommit: %s\ndate: %s\n", version, commit, date)
+		os.Exit(0)
 	}
 	flag.Parse()
 
@@ -272,4 +282,10 @@ var (
 	dimStyle     = lipgloss.NewStyle().Faint(true)
 	quitStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
 	inputStyle   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("10"))
+)
+
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
 )
