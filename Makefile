@@ -1,32 +1,23 @@
-APP_NAME := nuke
-VERSION  := $(shell git describe --tags --always --dirty)
-DIST     := dist
+APP_NAME = nuke
+VERSION  = $(shell git describe --tags --always --dirty)
+DATE     = $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+COMMIT   = $(shell git rev-parse --short HEAD)
 
-# GOOS/GOARCH combos
-TARGETS := \
-	"linux amd64" \
-	"darwin amd64" \
-	"darwin arm64"
+BUILD_FLAGS = -ldflags "-s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(DATE)"
 
-all: release
+.PHONY: build release
 
-clean:
-	rm -rf $(DIST)
+build:
+	@echo "🔧 Building $(APP_NAME)..."
+	go build $(BUILD_FLAGS) -o $(APP_NAME) ./main.go
 
-$(DIST):
-	mkdir -p $(DIST)
+release:
+	@echo "📦 Building release version: $(VERSION)"
+	@rm -rf dist
+	@mkdir -p dist/$(APP_NAME)_darwin_amd64 dist/$(APP_NAME)_darwin_arm64
 
-define build_target
-	GOOS=$(1) GOARCH=$(2) go build -ldflags="-s -w -X main.version=$(VERSION)" -o $(DIST)/$(APP_NAME)-$(1)-$(2) main.go
-	tar -C $(DIST) -czf $(DIST)/$(APP_NAME)-$(1)-$(2).tar.gz $(APP_NAME)-$(1)-$(2)
-endef
+	GOOS=darwin GOARCH=amd64  go build $(BUILD_FLAGS) -o dist/$(APP_NAME)_darwin_amd64/$(APP_NAME) ./main.go
+	GOOS=darwin GOARCH=arm64  go build $(BUILD_FLAGS) -o dist/$(APP_NAME)_darwin_arm64/$(APP_NAME) ./main.go
 
-release: clean $(DIST)
-	@echo "Building release version: $(VERSION)"
-	@$(foreach t,$(TARGETS),\
-		$(eval os := $(word 1, $(t)))\
-		$(eval arch := $(word 2, $(t)))\
-		$(call build_target,$(os),$(arch))\
-	)
-
-.PHONY: all clean release
+	@echo "✅ Binaries built:"
+	@du -sh dist/*
